@@ -24,8 +24,8 @@ mvn package
 
 ```
 REGISTER '/path/to/parquet-pig-bundle-1.5.0.jar';
-REGISTER '/path/to/parquet-hadoop-1.0.0.jar'; -- generated from the above build step
-REGISTER '/path/to/parquet-pig-1.0.0.jar';    -- generated from the above build step
+REGISTER '/path/to/parquet-hadoop-contrib-1.0.0.jar'; -- generated from the above build step
+REGISTER '/path/to/parquet-pig-contrib-1.0.0.jar';    -- generated from the above build step
 
 SET parquet.compression snappy
 
