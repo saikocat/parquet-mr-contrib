@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.saikocat</groupId>
+    <artifactId>parquet-mr-contrib</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <name>Parquet Contrib</name>
+    <url>https://github.com/saikocat/parquet-mr-contrib</url>
+    <description>Parquet is a columnar storage format that supports nested data. This provides the java implementation.</description>
+
+    <scm>
+        <connection>scm:git:git@github.com:saikocat/parquet-mr-contrib.git</connection>
+        <url>scm:git:git@github.com:saikocat/parquet-mr-contrib.git</url>
+        <developerConnection>scm:git:git@github.com:saikocat/parquet-mr-contrib.git</developerConnection>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Nguyen Duc Hoa</name>
+            <email>hoameomu@gmail.com</email>
+        </developer>
+    </developers>
+
+    <modules>
+      <module>parquet-hadoop</module>
+      <module>parquet-pig</module>
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	<maven-jar-plugin.version>2.4</maven-jar-plugin.version>
+	<shade.prefix>parquet-contrib</shade.prefix>
+        <jackson.groupId>org.codehaus.jackson</jackson.groupId>
+        <jackson.version>1.9.11</jackson.version>
+        <jackson.package>org.codehaus.jackson</jackson.package>
+        <shade.prefix>parquet</shade.prefix>
+        <hadoop.version>2.3.0</hadoop.version>
+        <parquet.version>1.5.0</parquet.version>
+        <parquet.format.version>2.2.0-rc1</parquet.format.version>
+        <previous.version></previous.version>
+        <scala.binary.version>2.10</scala.binary.version>
+        <pig.version>0.12.1</pig.version>
+        <pig.classifier>h2</pig.classifier>
+        <log4j.version>1.2.17</log4j.version>
+    </properties>
+
+</project>
