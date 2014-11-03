@@ -35,8 +35,8 @@
     </developers>
 
     <modules>
-      <module>parquet-hadoop</module>
-      <module>parquet-pig</module>
+      <module>parquet-hadoop-contrib</module>
+      <module>parquet-pig-contrib</module>
     </modules>
 
     <properties>

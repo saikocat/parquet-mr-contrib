@@ -12,19 +12,34 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>parquet-hadoop</artifactId>
+    <artifactId>parquet-pig-contrib</artifactId>
     <packaging>jar</packaging>
 
-    <name>Parquet Hadoop</name>
-    <url>https://github.com/saikocat/parquet-contrib</url>
+    <name>Parquet Pig</name>
+    <url>https://github.com/saikocat/parquet-mr-contrib</url>
 
     <properties>
     </properties>
 
     <dependencies>
         <dependency>
+            <groupId>com.saikocat</groupId>
+            <artifactId>parquet-hadoop-contrib</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.twitter</groupId>
             <artifactId>parquet-column</artifactId>
+            <version>${parquet.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.twitter</groupId>
+            <artifactId>parquet-hadoop</artifactId>
+            <version>${parquet.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.twitter</groupId>
+            <artifactId>parquet-pig</artifactId>
             <version>${parquet.version}</version>
         </dependency>
         <dependency>
@@ -33,20 +48,15 @@
             <version>${parquet.format.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.twitter</groupId>
-            <artifactId>parquet-hadoop</artifactId>
-            <version>${parquet.version}</version>
+            <groupId>org.apache.pig</groupId>
+            <artifactId>pig</artifactId>
+            <version>${pig.version}</version>
+            <classifier>${pig.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
             <version>${hadoop.version}</version>
-	    <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>${log4j.version}</version>
 	    <scope>provided</scope>
         </dependency>
         <dependency>
@@ -63,6 +73,12 @@
             <groupId>${jackson.groupId}</groupId>
             <artifactId>jackson-core-asl</artifactId>
             <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>${log4j.version}</version>
+	    <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -81,4 +97,4 @@
     </build>
     -->
 
-</project>
+  </project>
