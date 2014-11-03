@@ -56,6 +56,7 @@ The prefix **'0000\*'** is the task-id of the mapper/reducer task executing this
 * Missing unit test gives poor confidence (I do have a few rudimentary ones in Pig and Bash, but doing them in Java is a pain though).
 * Astute reader might notice that the contrib package has the same location as the official package (parquet.hadoop), this is because it uses *CodecFactory.BytesCompressor* and *InternalParquetRecordWriter* which are private. Probably a better way will be [Create your own objects](https://github.com/apache/incubator-parquet-mr#create-your-own-objects).
 * If you are MultiStorage user, the prefix/task-id might look differently depending on your locale. MultiStorage uses *NumberFormat* to format the task-id (which is influenced by system locale), while I use *String.format* with zero-padded instead to remove this inconsistency.
+* I used the code from parquet hadoop *1.5.0*, thus if you are using CHD5 or PivotalHD, you will need to replace the *pig-bundle-1.2.x* jar. WriterVersion property is missing in CHD5 parquet io column, while TupleWriteSupport.init is missing in PivotalHD.
 
 ## License
 
