@@ -76,15 +76,27 @@ import parquet.hadoop.ParquetMultiOutputFormat;
 public class ParquetMultiStorer extends StoreFunc implements StoreMetadata {
 
     private static final String SCHEMA = "schema";
+    private static final int MAX_NO_OF_WRITERS = 10;
 
     private RecordWriter<String, Tuple> recordWriter;
 
     private String signature;
 
     private int splitFieldIndex = 0;
+    private int maxNumberOfWriters;
 
-    public ParquetMultiStorer(String splitFieldIndex) {
+    public ParquetMultiStorer(String splitFieldIndex)
+            throws IOException {
+        this(splitFieldIndex, Integer.toString(MAX_NO_OF_WRITERS));
+    }
+
+    public ParquetMultiStorer(String splitFieldIndex, String maxNumberOfWriters)
+            throws IOException {
         this.splitFieldIndex = Integer.parseInt(splitFieldIndex);
+        this.maxNumberOfWriters = Integer.parseInt(maxNumberOfWriters);
+
+        if (this.maxNumberOfWriters <= 0)
+            throw new IOException("Max Number of Writers must be larger than 0");
     }
 
     private Properties getProperties() {
@@ -129,7 +141,7 @@ public class ParquetMultiStorer extends StoreFunc implements StoreMetadata {
     @Override
     public OutputFormat<String, Tuple> getOutputFormat() throws IOException {
         Schema pigSchema = getSchema();
-        return new ParquetMultiOutputFormat<String, Tuple>(new TupleWriteSupport(pigSchema));
+        return new ParquetMultiOutputFormat<String, Tuple>(new TupleWriteSupport(pigSchema), getMaxNumberOfWriters());
     }
 
     /**
@@ -188,5 +200,9 @@ public class ParquetMultiStorer extends StoreFunc implements StoreMetadata {
 
     public int getSplitFieldIndex() {
         return splitFieldIndex;
+    }
+
+    public int getMaxNumberOfWriters() {
+        return maxNumberOfWriters;
     }
 }

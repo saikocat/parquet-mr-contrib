@@ -105,9 +105,25 @@ public class ParquetMultiOutputFormat<K, T> extends FileOutputFormat<K, T> {
     public static final String WRITER_VERSION = "parquet.writer.version";
     public static final String ENABLE_JOB_SUMMARY = "parquet.enable.summary-metadata";
     private static final Log LOG = Log.getLog(ParquetMultiOutputFormat.class);
+    private static final int MAX_NO_OF_WRITERS = 10;
 
     private WriteSupport<T> writeSupport;
     private ParquetMultiOutputCommitter committer;
+    private int maxNumberOfWriters;
+
+    /**
+     * constructor used when this OutputFormat in wrapped in another one (In Pig for example)
+     *
+     * @param writeSupportClass  the class used to convert the incoming records
+     * @param schema             the schema of the records
+     * @param extraMetaData      extra meta data to be stored in the footer of the file
+     * @param maxNumberOfWriters max number of open file handles
+     */
+    public <S extends WriteSupport<T>> ParquetMultiOutputFormat(S writeSupport, int maxNumberOfWriters) {
+        this.writeSupport = writeSupport;
+        this.maxNumberOfWriters = maxNumberOfWriters;
+    }
+
 
     /**
      * constructor used when this OutputFormat in wrapped in another one (In Pig for example)
@@ -118,6 +134,7 @@ public class ParquetMultiOutputFormat<K, T> extends FileOutputFormat<K, T> {
      */
     public <S extends WriteSupport<T>> ParquetMultiOutputFormat(S writeSupport) {
         this.writeSupport = writeSupport;
+        this.maxNumberOfWriters = MAX_NO_OF_WRITERS;
     }
 
     /**
@@ -125,6 +142,7 @@ public class ParquetMultiOutputFormat<K, T> extends FileOutputFormat<K, T> {
      * using parquet.write.support.class
      */
     public <S extends WriteSupport<T>> ParquetMultiOutputFormat() {
+        this.maxNumberOfWriters = MAX_NO_OF_WRITERS;
     }
 
     public static void setWriteSupportClass(Job job, Class<?> writeSupportClass) {
@@ -285,7 +303,8 @@ public class ParquetMultiOutputFormat<K, T> extends FileOutputFormat<K, T> {
                 dictionaryPageSize,
                 enableDictionary,
                 validating,
-                writerVersion);
+                writerVersion,
+                getMaxNumberOfWriters());
     }
 
     /**
@@ -303,6 +322,10 @@ public class ParquetMultiOutputFormat<K, T> extends FileOutputFormat<K, T> {
         } catch (IllegalAccessException e) {
             throw new BadConfigurationException("could not instantiate write support class: " + writeSupportClass, e);
         }
+    }
+
+    public int getMaxNumberOfWriters() {
+        return this.maxNumberOfWriters;
     }
 
     @Override

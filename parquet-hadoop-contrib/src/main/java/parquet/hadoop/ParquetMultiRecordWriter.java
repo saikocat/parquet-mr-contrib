@@ -62,6 +62,7 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
     private boolean enableDictionary;
     private boolean validating;
     private WriterVersion writerVersion;
+    private int maxNumberOfWriters;
 
     private LoadingCache<K, InternalParquetRecordWriter> cache;
 
@@ -77,6 +78,7 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
      * @param dictionaryPageSize the threshold for dictionary size
      * @param enableDictionary   to enable the dictionary
      * @param validating         if schema validation should be turned on
+     * @param maxNumberOfWriters max number of open file handles
      */
     public ParquetMultiRecordWriter(
             Path workPath,
@@ -91,7 +93,8 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
             int dictionaryPageSize,
             boolean enableDictionary,
             boolean validating,
-            WriterVersion writerVersion) {
+            WriterVersion writerVersion,
+            int maxNumberOfWriters) {
         this.workPath = workPath;
         this.extension = extension;
         this.taskId = taskId;
@@ -106,6 +109,7 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
         this.enableDictionary = enableDictionary;
         this.validating = validating;
         this.writerVersion = writerVersion;
+        this.maxNumberOfWriters = maxNumberOfWriters;
     }
 
     /**
@@ -179,7 +183,7 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
             };
 
             this.cache = CacheBuilder.newBuilder()
-                .maximumSize(10)
+                .maximumSize(getMaxNumberOfWriters())
                 .removalListener(removalListener)
                 .build(loader);
         }
@@ -256,5 +260,9 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
 
     public WriterVersion getWriterVersion() {
         return writerVersion;
+    }
+
+    public int getMaxNumberOfWriters() {
+        return maxNumberOfWriters;
     }
 }
