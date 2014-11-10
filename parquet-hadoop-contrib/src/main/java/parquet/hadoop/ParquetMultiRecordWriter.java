@@ -48,7 +48,6 @@ import parquet.schema.MessageType;
  */
 public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
 
-    private ParquetFileWriter w;
     private Path workPath;
     private String extension;
     private String taskId;
@@ -217,10 +216,6 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
 
     public String getTaskId() {
         return taskId;
-    }
-
-    public ParquetFileWriter getW() {
-        return w;
     }
 
     public WriteSupport<T> getWriteSupport() {
