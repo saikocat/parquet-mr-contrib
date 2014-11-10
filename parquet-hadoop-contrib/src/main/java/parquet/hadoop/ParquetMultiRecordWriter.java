@@ -21,8 +21,16 @@ import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 
 import parquet.column.ParquetProperties.WriterVersion;
 import parquet.hadoop.CodecFactory.BytesCompressor;
@@ -56,8 +64,7 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
     private boolean validating;
     private WriterVersion writerVersion;
 
-    private Map<String, InternalParquetRecordWriter<T>> storeMap =
-            new HashMap<String, InternalParquetRecordWriter<T>>();
+    private LoadingCache<K, InternalParquetRecordWriter> cache;
 
     /**
      * @param workPath           the path to the output directory (temporary)
@@ -108,39 +115,80 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
     @SuppressWarnings("rawtypes")
     @Override
     public void close(TaskAttemptContext context) throws IOException, InterruptedException {
-        for (InternalParquetRecordWriter writer : storeMap.values()) {
-            writer.close();
-        }
+        this.cache.invalidateAll();
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private InternalParquetRecordWriter getStore(String fieldValue) throws IOException {
-        InternalParquetRecordWriter store = storeMap.get(fieldValue);
-        if (store == null) {
-            String extension = this.getExtension();
-            Path path = new Path(fieldValue + extension, fieldValue + '-'
-                    + this.getTaskId() + extension);
-            Path file = new Path(this.getWorkPath(), path);
+    public LoadingCache<K, InternalParquetRecordWriter> getCache() {
+        if (this.cache == null) {
+            final String extension = this.getExtension();
+            final String taskId = this.getTaskId();
+            final Path workPath = this.getWorkPath();
+            final Configuration conf = this.getConf();
+            final MessageType schema = this.getSchema();
+            final WriteSupport<T> writeSupport = this.getWriteSupport();
+            final Map<String, String> extraMetaData = this.getExtraMetaData();
+            final int blockSize = this.getBlockSize();
+            final int pageSize = this.getPageSize();
+            final BytesCompressor compressor = this.getCompressor();
+            final int dictionaryPageSize = this.getDictionaryPageSize();
+            final boolean enableDictionary = this.isEnableDictionary();
+            final boolean validating = this.isValidating();
+            final WriterVersion writerVersion = this.getWriterVersion();
 
-            ParquetFileWriter fw = new ParquetFileWriter(this.getConf(), this.getSchema(), file);
-            fw.start();
+            CacheLoader<K, InternalParquetRecordWriter> loader =
+                    new CacheLoader<K, InternalParquetRecordWriter> () {
+                public InternalParquetRecordWriter load(K key) throws Exception {
+                    final String fieldValue = key.toString();
+                    final long timestamp = System.currentTimeMillis();
 
-            store = new InternalParquetRecordWriter<T>(
-                    fw,
-                    this.getWriteSupport(),
-                    this.getSchema(),
-                    this.getExtraMetaData(),
-                    this.getBlockSize(),
-                    this.getPageSize(),
-                    this.getCompressor(),
-                    this.getDictionaryPageSize(),
-                    this.isEnableDictionary(),
-                    this.isValidating(),
-                    this.getWriterVersion());
-            storeMap.put(fieldValue, store);
+                    Path path = new Path(fieldValue + extension, fieldValue + '-'
+                            + taskId + '-' + timestamp + extension);
+                    Path file = new Path(workPath, path);
+
+                    ParquetFileWriter fw = new ParquetFileWriter(
+                            conf,
+                            schema,
+                            file);
+                    fw.start();
+
+                    return new InternalParquetRecordWriter<T>(
+                            fw,
+                            writeSupport,
+                            schema,
+                            extraMetaData,
+                            blockSize,
+                            pageSize,
+                            compressor,
+                            dictionaryPageSize,
+                            enableDictionary,
+                            validating,
+                            writerVersion);
+                }
+            };
+            RemovalListener<K, InternalParquetRecordWriter> removalListener =
+                    new RemovalListener<K, InternalParquetRecordWriter>() {
+                public void onRemoval(RemovalNotification<K, InternalParquetRecordWriter> removal) {
+                    InternalParquetRecordWriter writerToRemove = removal.getValue();
+                    try {
+                        writerToRemove.close();
+                    } catch (IOException ioe) {
+                        throw new RuntimeException("Exception on closing cached writer", ioe);
+                    } catch (InterruptedException ite) {
+                        throw new RuntimeException(ite);
+                    }
+                }
+            };
+
+            this.cache = CacheBuilder.newBuilder()
+                .maximumSize(10)
+                .removalListener(removalListener)
+                .build(loader);
         }
-        return store;
+
+        return this.cache;
     }
+
+    //
 
     /**
      * {@inheritDoc}
@@ -148,7 +196,11 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
     @SuppressWarnings("unchecked")
     @Override
     public void write(K key, T value) throws IOException, InterruptedException {
-        getStore(key.toString()).write(value);
+        try {
+            getCache().get(key).write(value);
+        } catch (ExecutionException ee) {
+            throw new RuntimeException("Exception on getting cached writer", ee);
+        }
     }
 
     public Path getWorkPath() {
