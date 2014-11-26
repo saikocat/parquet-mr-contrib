@@ -35,6 +35,7 @@ import com.google.common.cache.RemovalNotification;
 import parquet.column.ParquetProperties.WriterVersion;
 import parquet.hadoop.CodecFactory.BytesCompressor;
 import parquet.hadoop.ParquetFileWriter;
+import parquet.hadoop.ParquetRecordWriter;
 import parquet.hadoop.api.WriteSupport;
 import parquet.schema.MessageType;
 
@@ -64,7 +65,7 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
     private WriterVersion writerVersion;
     private int maxNumberOfWriters;
 
-    private LoadingCache<K, InternalParquetRecordWriter> cache;
+    private LoadingCache<K, ParquetRecordWriter> cache;
 
     /**
      * @param workPath           the path to the output directory (temporary)
@@ -121,7 +122,7 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
         this.cache.invalidateAll();
     }
 
-    public LoadingCache<K, InternalParquetRecordWriter> getCache() {
+    public LoadingCache<K, ParquetRecordWriter> getCache() {
         if (this.cache == null) {
             final String extension = this.getExtension();
             final String taskId = this.getTaskId();
@@ -138,9 +139,9 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
             final boolean validating = this.isValidating();
             final WriterVersion writerVersion = this.getWriterVersion();
 
-            CacheLoader<K, InternalParquetRecordWriter> loader =
-                    new CacheLoader<K, InternalParquetRecordWriter> () {
-                public InternalParquetRecordWriter load(K key) throws Exception {
+            CacheLoader<K, ParquetRecordWriter> loader =
+                    new CacheLoader<K, ParquetRecordWriter> () {
+                public ParquetRecordWriter load(K key) throws Exception {
                     final String fieldValue = key.toString();
                     final long timestamp = System.currentTimeMillis();
 
@@ -154,7 +155,7 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
                             file);
                     fw.start();
 
-                    return new InternalParquetRecordWriter<T>(
+                    return new ParquetRecordWriter<T>(
                             fw,
                             writeSupport,
                             schema,
@@ -168,12 +169,13 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
                             writerVersion);
                 }
             };
-            RemovalListener<K, InternalParquetRecordWriter> removalListener =
-                    new RemovalListener<K, InternalParquetRecordWriter>() {
-                public void onRemoval(RemovalNotification<K, InternalParquetRecordWriter> removal) {
-                    InternalParquetRecordWriter writerToRemove = removal.getValue();
+
+            RemovalListener<K, ParquetRecordWriter> removalListener =
+                    new RemovalListener<K, ParquetRecordWriter>() {
+                public void onRemoval(RemovalNotification<K, ParquetRecordWriter> removal) {
+                    ParquetRecordWriter writerToRemove = removal.getValue();
                     try {
-                        writerToRemove.close();
+                        writerToRemove.close(null);
                     } catch (IOException ioe) {
                         throw new RuntimeException("Exception on closing cached writer", ioe);
                     } catch (InterruptedException ite) {
@@ -191,8 +193,6 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
         return this.cache;
     }
 
-    //
-
     /**
      * {@inheritDoc}
      */
@@ -200,7 +200,7 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
     @Override
     public void write(K key, T value) throws IOException, InterruptedException {
         try {
-            getCache().get(key).write(value);
+            getCache().get(key).write((Void) null, value);
         } catch (ExecutionException ee) {
             throw new RuntimeException("Exception on getting cached writer", ee);
         }
