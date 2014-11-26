@@ -1,3 +1,6 @@
+### Version 1.1.1 ### 
+* Fix corrupted output by setting only 1 active writer at all time
+
 ### Version 1.1.0 ### 
 * Use Guava LoadingCache to control the maximum number of open file handles,
   thus avoids the Heap error.
