@@ -200,6 +200,16 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
     @Override
     public void write(K key, T value) throws IOException, InterruptedException {
         try {
+            // WARNING:
+            // This is digusting yet I can't find out why the heck that if
+            // there are 2 writers, the output files are corrupted and the
+            // buckets are filled in incorrectly. Also the cache is useless
+            // now since only 1 writer will be active at all time.
+            if (key != getCurrentKey()) {
+                if (this.cache != null)
+                    getCache().invalidate(getCurrentKey());
+                setCurrentKey(key);
+            }
             getCache().get(key).write((Void) null, value);
         } catch (ExecutionException ee) {
             throw new RuntimeException("Exception on getting cached writer", ee);
@@ -264,5 +274,15 @@ public class ParquetMultiRecordWriter<K, T> extends RecordWriter<K, T> {
 
     public int getMaxNumberOfWriters() {
         return maxNumberOfWriters;
+    }
+
+    private K currentKey;
+
+    public K getCurrentKey() {
+        return this.currentKey;
+    }
+
+    public void setCurrentKey(K currentKey) {
+        this.currentKey = currentKey;
     }
 }
