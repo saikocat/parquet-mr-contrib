@@ -9,7 +9,7 @@
         <groupId>com.saikocat</groupId>
         <artifactId>parquet-mr-contrib</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>1.1.0</version>
+        <version>1.1.1</version>
     </parent>
 
     <artifactId>parquet-pig-contrib</artifactId>
